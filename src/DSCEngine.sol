@@ -7,6 +7,7 @@ import {Ownable} from "lib/openzeppelin-contracts/contracts/access/Ownable.sol";
 import {ReentrancyGuard } from "lib/openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
 import {DecentralizeStableCoin} from "src/DecentralizeStableCoin.sol";
 import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {AggregatorV3Interface} from "lib/chainlink-brownie-contracts/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
 
 /**
  * @title Decentralize stablecoin engine
@@ -46,22 +47,36 @@ contract DSCEngine is ReentrancyGuard,Ownable{
    error DSCEngine_ZeroAmountNotAllowed();
    error DSCEngine_MismatchPriceFeedAddresses();
    error DSCEngine_ZeroAddressNotAllowed();
+   error DSCEngine_StableCoinValueCannotBeGreaterThanItsCollateralValue();
+   error DSCEngine_BreaksHealthFactor();
    error DSCEngine_TransactionFailed();
+
 
    // type declaration
 
-   // tokenToPriceFeed
-   mapping (address token => address priceFeed) private s_priceFeeds;
-   // Manage the users deposit for particular token
-   mapping (address user => mapping(address token => uint256 amount)) private s_userCollateralDeposit;
+   // (WETH/WBTC) contract address to pricefeed!!!
+   mapping (address collateralAddress => address priceFeed) private s_priceFeeds;
+   // Manage the users deposit for particular token(WETH/WBTC)
+   mapping (address user => mapping(address collateralAddress => uint256 amount)) private s_userCollateralDeposit;
    // manage the minted DSC for user
    mapping (address user => uint256 amountDSCMinted) private s_amountDSCUserMinted;
+   // Storing all collateral address in an array so we can add different collateral value
+   address[] private s_collateralAddresses;
+
 
    // state variables
+   uint256 private constant ADDITION_FEED_FEE = 1e10;
+   uint256 private constant PRICEFEED_DECIMAL = 1e18;
+   uint256 private constant LIQUIDATION_THRESHOLD = 50; // x% over collateralized
+   uint256 private constant LIQUIDATION_PRECESION = 100;
+   uint256 private constant MINIMUM_HEALTH_FACTOR = 1;
+   // DSC contract instance!!!
    DecentralizeStableCoin private immutable i_dsc;
+
 
    // events
    event DSCEngine_depositCollateral(address indexed owner, address tokenCollateralAddress, uint256 indexed amount);
+   event DSCEngine_mintDSC(address user,uint256 amountDSCMinted);
 
    // modifiers
    modifier zeroAmount(uint256 amount){
@@ -78,25 +93,45 @@ contract DSCEngine is ReentrancyGuard,Ownable{
       address dscAddress   
    ) 
       Ownable(msg.sender){
-         if(tokenAddress.length != priceFeedAddress.length){
+         if(tokenAddress.length != priceFeedAddresses.length){
             revert DSCEngine_MismatchPriceFeedAddresses();
          }
          for(uint256 i=0;i<tokenAddress.length;i++){
             s_priceFeeds[tokenAddress[i]] = priceFeedAddresses[i];
+            s_collateralAddresses.push(tokenAddress[i]);
          }
          i_dsc = DecentralizeStableCoin(dscAddress);
       }
 
-   function depositCollateralAndMintDSC() external payable {}
+
+
+
+   /**
+      @notice depositCollateralAndMintDSC function
+      @dev This function combines the flow of depositCollateral() and mintDSC() functions
+      @param tokenCollateralAddress Contract address of token deposited by user(WETH/WBTC)
+      @param amount Collateral deposited by user
+      @param amountDSCToMint The value of DSC user wants to mint
+    */
+   function depositCollateralAndMintDSC(
+      address tokenCollateralAddress,
+      uint256 amount,
+      uint256 amountDSCToMint
+   ) external payable {
+      depositCollateral(tokenCollateralAddress, amount);
+      mintDSC(amountDSCToMint);
+   }
 
 
    /** 
       @notice depositCollateral function
-      @dev This function will deposit collateral(ETH/BTC) in our vault(smart contract)
-      @dev We have implemented the check for 'Reentrant' attack using an 'nonReentrant' modifier
-      @dev Implemented mapping type to store the deposit collateral amount for particular token(ETH/BTC).
+      @param tokenCollateralAddress Contract address of token deposited by user(WETH/WBTC)
+      @param amount Collateral deposited by user
+      @dev a feature where users can deposit ETH into a smart contract.
+      @dev  For every deposit, calculate how much stablecoin can be issued based on the USD value of ETH.
+      @dev  If 1 ETH = $1500 and you have a 150% collateralization ratio, a user depositing 1 ETH can mint 1000 stablecoins.
    */ 
-   function depositCollateral(address tokenCollateralAddress, uint256 amount) external zeroAmount(amount) nonReentrant {      
+   function depositCollateral(address tokenCollateralAddress, uint256 amount) public zeroAmount(amount) nonReentrant {      
       if(s_priceFeeds[tokenCollateralAddress] == address(0)){
          revert DSCEngine_ZeroAddressNotAllowed(); 
       }
@@ -104,28 +139,34 @@ contract DSCEngine is ReentrancyGuard,Ownable{
       s_userCollateralDeposit[msg.sender][tokenCollateralAddress] += amount;
       emit DSCEngine_depositCollateral(msg.sender,tokenCollateralAddress,amount);
 
-      (bool success,) = IERC20(tokenCollateralAddress).transferFrom(msg.sender, address(this), amount);
+      bool success = IERC20(tokenCollateralAddress).transferFrom(msg.sender, address(this), amount);
       if(!success){
          revert DSCEngine_TransactionFailed();
       }
    }
 
    /** 
-      @notice depositCollateral function
-      @dev This function will deposit collateral(ETH/BTC) in our vault(smart contract)
+      @notice mint stablecoin function
+      @param amountDSCToMint The value of DSC user wants to mint
+      @dev When a user deposits ETH, allow the system to mint and send the equivalent amount of stablecoins to their wallet.
       @dev We have implemented the check for 'Reentrant' attack using an 'nonReentrant' modifier
-      @dev Implemented mapping type to store the deposit collateral amount for particular token(ETH/BTC).
+      @dev This step links ETH collateral with the stablecoin supply.
+         $200 ETH(deposited) -> $20 DSC(mint)
    */
-   function mintDSC(uint256 amountDSCToMint) external zeroAmount(amountDSCToMint) nonReentrant {
+   function mintDSC(uint256 amountDSCToMint) public zeroAmount(amountDSCToMint) nonReentrant {
       s_amountDSCUserMinted[msg.sender] += amountDSCToMint;
-      // function to check minted DSC value in $ < deposited ETH
+      _revertIfHealthFactorOfUserBreaks(msg.sender);
+      bool success = i_dsc.mint(msg.sender, amountDSCToMint);
+      if(!success){
+         revert DSCEngine_TransactionFailed();
+      }
 
+      emit DSCEngine_mintDSC(msg.sender,amountDSCToMint);
    }
 
    function reedemDSCForCollateral() external {}
 
    function reedemDSC() external {}
-
 
    function burnDSC() external {}
 
@@ -135,16 +176,53 @@ contract DSCEngine is ReentrancyGuard,Ownable{
 
 
 
+
    // Internal functions
+
    function _getUserInfo(address user) internal view returns(uint256 totalDSCMinted,uint256 collateralValueInUSD){
       totalDSCMinted = s_amountDSCUserMinted[user];
-      collateralValueInUSD = s_userCollateralDeposit[user];
+      collateralValueInUSD = getUserCollateralValue(user);
    }
-   function _getHealthFactor(address user) private view returns(uint256){
-
+   function _getHealthFactor(address user) private view returns(uint256 healthFactor){
+      (uint256 totalDSCMinted, uint256 collateralValueInUSD) = _getUserInfo(user);
+      if(totalDSCMinted >= collateralValueInUSD){
+         revert DSCEngine_StableCoinValueCannotBeGreaterThanItsCollateralValue();
+      }
+      uint256 collateralAdjustedForThreshold = ((collateralValueInUSD * LIQUIDATION_THRESHOLD) / LIQUIDATION_PRECESION);
+      return ((collateralAdjustedForThreshold * PRICEFEED_DECIMAL) / totalDSCMinted);
+      
    }
-   function _revertIfHealthFactorOfUserIsNotGood() internal view {
+   function _revertIfHealthFactorOfUserBreaks(
+      // address tokenCollateralAddress,
+      address user) 
+      internal view returns(uint256){
       // check the health factor (check user have enough ETH!!!)
-      revert();
+      // A (userHealthFactor > 1) means the user is safely collateralized.
+      // A (userHealthFactor ≤ 1) means the user is undercollateralized, they need to be liquidated.
+      uint256 userHealthFactor = _getHealthFactor(user);
+      if(userHealthFactor <= MINIMUM_HEALTH_FACTOR){
+         revert DSCEngine_BreaksHealthFactor();
+      }
+      return userHealthFactor;
    }
+
+
+
+   // getter function
+   function getUserCollateralValue(address user) public view returns(uint256 totalCollateralValueInUSD){
+      for(uint256 i=0;i<s_collateralAddresses.length;i++){
+         address collateralAddress = s_collateralAddresses[i];
+         uint256 amount = s_userCollateralDeposit[user][collateralAddress];
+         totalCollateralValueInUSD += getUSDValue(collateralAddress,amount);
+      }
+   }
+
+   function getUSDValue(address collateralAddress,uint256 amount) public view returns(uint256){
+      AggregatorV3Interface priceFeed = AggregatorV3Interface(s_priceFeeds[collateralAddress]);
+      (,int256 price,,,) = priceFeed.latestRoundData();
+
+      return (((uint256(price) * ADDITION_FEED_FEE) * amount ) / PRICEFEED_DECIMAL);
+   }
+
+
 }

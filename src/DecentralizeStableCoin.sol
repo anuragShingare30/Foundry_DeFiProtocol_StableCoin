@@ -53,7 +53,7 @@ contract DecentralizeStableCoin is ERC20, ERC20Burnable, Ownable {
         super.burn(_burnAmount);
     }
 
-    function mint(address to, uint256 amount) public onlyOwner {
+    function mint(address to, uint256 amount) public onlyOwner returns(bool) {
         if(amount <= 0){
             revert DecentralizeStableCoin_ZeroAmountNotAllowed();
         }
@@ -61,5 +61,6 @@ contract DecentralizeStableCoin is ERC20, ERC20Burnable, Ownable {
             revert DecentralizeStableCoin_ZeroAddressNotAllowed();
         }
         _mint(to, amount);
+        return true;
     }
 }
