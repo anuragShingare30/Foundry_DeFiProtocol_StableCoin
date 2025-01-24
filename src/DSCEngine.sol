@@ -14,7 +14,7 @@ import {AggregatorV3Interface} from "lib/chainlink-brownie-contracts/contracts/s
  * @author anurag shingare
  * @notice This contract is the core of DSC system(DSCEngine).It handles all the logic to develop an Stablecoin(DSC)
  * @dev To develop an stablecoin we will require an contract(DSCEngine) that contains all functionality and methods.
- * @dev Our stable coin is DecentralizeStableCoin (DSC)
+ * @dev Our stable coin is DecentralizeStableCoin (DSC).
  * @dev The flow of developing an Stablecoin(DSC) will be as followed:
          a. Deploy the ERC20 Token Contract(Minting,Burning,checkBalance)
             - Basic ERC-20 token standard to ensure basic functionality!!
@@ -28,7 +28,7 @@ import {AggregatorV3Interface} from "lib/chainlink-brownie-contracts/contracts/s
          f. Redemption of Stablecoins (Allow users to redeem their DSC for ETH at the pegged $1 value)
          g. Liquidation System (Protect the system from ETH price drops)
  * @dev Our Stablecoin (DSC) is categorized as:
-         a. Pegged on USD value
+         a. Pegged by USD value
          b. Algorithmic stability method (Minting,Burning)
          c. Exogenously collateralized by ETH/BTC
          d. Our system should always be "over-collateralized"
@@ -65,8 +65,8 @@ contract DSCEngine is ReentrancyGuard,Ownable{
 
 
    // state variables
-   uint256 private constant ADDITION_FEED_FEE = 1e10;
-   uint256 private constant PRICEFEED_DECIMAL = 1e18;
+   uint256 private constant PRICE_FEED_SCALE_FACTOR = 1e10;
+   uint256 private constant TOKEN_DECIMAL_STANDARD = 1e18;
    uint256 private constant LIQUIDATION_THRESHOLD = 50; // x% over collateralized
    uint256 private constant LIQUIDATION_PRECESION = 100;
    uint256 private constant MINIMUM_HEALTH_FACTOR = 1;
@@ -110,8 +110,9 @@ contract DSCEngine is ReentrancyGuard,Ownable{
       @notice depositCollateralAndMintDSC function
       @dev This function combines the flow of depositCollateral() and mintDSC() functions
       @param tokenCollateralAddress Contract address of token deposited by user(WETH/WBTC)
-      @param amount Collateral deposited by user
+      @param amount amount of Collateral deposited by user
       @param amountDSCToMint The value of DSC user wants to mint
+      @notice This function will deposit Collateral and mint DSC in one transaction!!!
     */
    function depositCollateralAndMintDSC(
       address tokenCollateralAddress,
@@ -161,12 +162,20 @@ contract DSCEngine is ReentrancyGuard,Ownable{
          revert DSCEngine_TransactionFailed();
       }
 
-      emit DSCEngine_mintDSC(msg.sender,amountDSCToMint);
+      emit DSCEngine_mintDSC(msg.sender,amountDSCToMint);   
    }
 
    function reedemDSCForCollateral() external {}
 
-   function reedemDSC() external {}
+
+   /** 
+      @notice reedemDSC function
+      @dev Allow users to redeem their stablecoins for ETH at the pegged $1 value.
+      @dev When a user redeems stablecoins, burn the tokens and release the corresponding ETH from the collateral pool.
+   */
+   function reedemDSC() external {
+      
+   }
 
    function burnDSC() external {}
 
@@ -189,8 +198,7 @@ contract DSCEngine is ReentrancyGuard,Ownable{
          revert DSCEngine_StableCoinValueCannotBeGreaterThanItsCollateralValue();
       }
       uint256 collateralAdjustedForThreshold = ((collateralValueInUSD * LIQUIDATION_THRESHOLD) / LIQUIDATION_PRECESION);
-      return ((collateralAdjustedForThreshold * PRICEFEED_DECIMAL) / totalDSCMinted);
-      
+      return ((collateralAdjustedForThreshold * PRICE_FEED_SCALE_FACTOR) / totalDSCMinted);
    }
    function _revertIfHealthFactorOfUserBreaks(
       // address tokenCollateralAddress,
@@ -219,9 +227,16 @@ contract DSCEngine is ReentrancyGuard,Ownable{
 
    function getUSDValue(address collateralAddress,uint256 amount) public view returns(uint256){
       AggregatorV3Interface priceFeed = AggregatorV3Interface(s_priceFeeds[collateralAddress]);
-      (,int256 price,,,) = priceFeed.latestRoundData();
-
-      return (((uint256(price) * ADDITION_FEED_FEE) * amount ) / PRICEFEED_DECIMAL);
+      (
+            /* uint80 roundID */,
+            int price,
+            /*uint startedAt*/,
+            /*uint timeStamp*/,
+            /*uint80 answeredInRound*/
+        ) = priceFeed.latestRoundData();
+      
+      // (price * 1e10 * amountInETH) / 1e18  == $3426.09737...
+      return (((uint256(price) * PRICE_FEED_SCALE_FACTOR) * amount ) / TOKEN_DECIMAL_STANDARD);
    }
 
 
