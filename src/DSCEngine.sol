@@ -145,11 +145,7 @@ contract DSCEngine is ReentrancyGuard,Ownable{
       @dev  For every deposit, calculate how much stablecoin can be issued based on the USD value of ETH.
       @dev  If 1 ETH = $1500 and you have a 150% collateralization ratio, a user depositing 1 ETH can mint 1000 stablecoins.
    */ 
-   function depositCollateral(address tokenCollateralAddress, uint256 amount) public zeroAmount(amount) nonReentrant {      
-      if(s_priceFeeds[tokenCollateralAddress] == address(0)){
-         revert DSCEngine_ZeroAddressNotAllowed(); 
-      }
-
+   function depositCollateral(address tokenCollateralAddress, uint256 amount) public zeroAmount(amount) isValidCollateralType(tokenCollateralAddress) nonReentrant {      
       s_userCollateralDeposit[msg.sender][tokenCollateralAddress] += amount;
       emit DSCEngine_depositCollateral(msg.sender,tokenCollateralAddress,amount);
 
@@ -358,6 +354,7 @@ contract DSCEngine is ReentrancyGuard,Ownable{
 
 
    // getter function
+
    function getUserCollateralValue(address user) public view returns(uint256 totalCollateralValueInUSD){
       for(uint256 i=0;i<s_collateralAddresses.length;i++){
          address collateralAddress = s_collateralAddresses[i];
@@ -366,6 +363,8 @@ contract DSCEngine is ReentrancyGuard,Ownable{
       }
    }
 
+   // Converts ETH(wei) to USD value
+   // 1e18 wei -> $3427.89
    function getUSDValue(address collateralAddress,uint256 amount) public view returns(uint256){
       AggregatorV3Interface priceFeed = AggregatorV3Interface(s_priceFeeds[collateralAddress]);
       (
@@ -380,6 +379,9 @@ contract DSCEngine is ReentrancyGuard,Ownable{
       return (((uint256(price) * PRICE_FEED_SCALE_FACTOR) * amount ) / TOKEN_DECIMAL_STANDARD);
    }
 
+   // Converts USD amount(debt in wei) to collateral(ETH) token amount
+   // $100 -> 0.05 ether
+   // 100 1e18 -> 5e16
    function getDebtAmountInUsd(address collateral,uint256 amount) public view returns(uint256 debtAmountInUsd){
       AggregatorV3Interface priceFeed = AggregatorV3Interface(s_priceFeeds[collateral]);
       (,int price,,,) = priceFeed.latestRoundData();
@@ -389,6 +391,10 @@ contract DSCEngine is ReentrancyGuard,Ownable{
       // price(from chainlink) -> 200000000 == 2 * 1e8
       // PRICE_FEED_SCALE_FACTOR -> 1e10
       debtAmountInUsd = (amount * LIQUIDATION_PRECESION) / (uint256(price) * PRICE_FEED_SCALE_FACTOR);
+   }
+
+   function getUserCollateralDeposit(address tokenAddress) public view returns(uint256){
+      return s_userCollateralDeposit[msg.sender][tokenAddress];
    }
 
 
