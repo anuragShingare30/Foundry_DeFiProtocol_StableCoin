@@ -53,6 +53,10 @@ contract DSCEngine is ReentrancyGuard,Ownable{
    error DSCEngine_InvalidTypeOfCollateralUsed();
    error DSCEngine_NoNeedToLiquidateUser();
    error DSCEngine_HealthfactorOfUserNotImproved();
+   error DSCEngine_depositCollateralFailed();
+   error DSCEngine_mintDSCFailed();
+   error DSCEngine_reedemCollateralFailed();
+   error DSCEngine_burnDSCFailed();
 
 
    // type declaration
@@ -151,7 +155,7 @@ contract DSCEngine is ReentrancyGuard,Ownable{
 
       bool success = IERC20(tokenCollateralAddress).transferFrom(msg.sender, address(this), amount);
       if(!success){
-         revert DSCEngine_TransactionFailed();
+         revert DSCEngine_depositCollateralFailed();
       }
    }
 
@@ -168,7 +172,7 @@ contract DSCEngine is ReentrancyGuard,Ownable{
       _revertIfHealthFactorOfUserBreaks(msg.sender);
       bool success = i_dsc.mint(msg.sender, amountDSCToMint);
       if(!success){
-         revert DSCEngine_TransactionFailed();
+         revert DSCEngine_mintDSCFailed();
       }
 
       emit DSCEngine_mintDSC(msg.sender,amountDSCToMint);   
@@ -303,6 +307,7 @@ contract DSCEngine is ReentrancyGuard,Ownable{
       uint256 collateralAdjustedForThreshold = ((collateralValueInUSD * LIQUIDATION_THRESHOLD) / PRECESION);
       return ((collateralAdjustedForThreshold * PRICE_FEED_SCALE_FACTOR) / totalDSCMinted);
    }
+
    function _revertIfHealthFactorOfUserBreaks(
       // address tokenCollateralAddress,
       address user) 
@@ -331,7 +336,7 @@ contract DSCEngine is ReentrancyGuard,Ownable{
 
       bool success = IERC20(tokenCollateralAddress).transfer(to, amountCollateral);
       if(!success){
-         revert DSCEngine_TransactionFailed();
+         revert DSCEngine_reedemCollateralFailed();
       }
    }
 
@@ -345,7 +350,7 @@ contract DSCEngine is ReentrancyGuard,Ownable{
 
       bool success = i_dsc.transferFrom(dscFrom, address(this), amount);
       if(!success){
-         revert DSCEngine_TransactionFailed();
+         revert DSCEngine_burnDSCFailed();
       }
 
       i_dsc.burn(amount);
@@ -395,6 +400,10 @@ contract DSCEngine is ReentrancyGuard,Ownable{
 
    function getUserCollateralDeposit(address tokenAddress) public view returns(uint256){
       return s_userCollateralDeposit[msg.sender][tokenAddress];
+   }
+
+   function getAmountDSCUserMinted() public view returns(uint256){
+      return s_amountDSCUserMinted[msg.sender];
    }
 
 

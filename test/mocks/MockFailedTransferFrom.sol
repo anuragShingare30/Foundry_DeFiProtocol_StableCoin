@@ -13,6 +13,8 @@ import {Ownable} from "lib/openzeppelin-contracts/contracts/access/Ownable.sol";
  * @notice This is the mock smart contract for transferFrom() which will fail.
  * @dev In tests, we are expecting revert if our transferFrom() fails.
  * @dev So, we will fail the transferFrom() method in this contract.
+
+ * @dev THIS CONTRACT CAN BEHAVE AS MOCK DSC CONTRACT JUST LIKE OUR MAIN DecentralizeStableCoin.sol contract
  */
 
 

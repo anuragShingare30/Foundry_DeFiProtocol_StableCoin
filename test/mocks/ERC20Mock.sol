@@ -8,16 +8,14 @@ import {Ownable} from "lib/openzeppelin-contracts/contracts/access/Ownable.sol";
 
 
 /**
- * @title MockFailedTransfer contract
+ * @title ERC20Mock contract
  * @author anurag shingare
- * @notice This is the mock smart contract for transfer() which will fail.
- * @dev In tests, we are expecting revert if our transfer() fails.
- * @dev So, we will fail the transfer() method in this contract.
+ * @notice This is the mock ERC20 token smart contract
+ * @dev This contract cna be used in testing some ERC20 functions and methods.
  */
 
 
-
-contract MockFailedTransfer is ERC20, ERC20Burnable, Ownable {
+contract ERC20Mock is ERC20, ERC20Burnable, Ownable {
     // errors
     error DecentralizeStableCoin_ZeroAmountNotAllowed();
     error DecentralizeStableCoin_TokenBalanceIsLessThanAmount();
@@ -54,10 +52,6 @@ contract MockFailedTransfer is ERC20, ERC20Burnable, Ownable {
             revert DecentralizeStableCoin_ZeroAddressNotAllowed();
         }
         _mint(to, amount);
-        return true;
-    }
-
-    function transfer(address to,uint256 value) public pure override returns(bool){
         return false;
     }
 }
