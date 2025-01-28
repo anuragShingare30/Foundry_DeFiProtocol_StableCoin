@@ -75,10 +75,11 @@ contract DSCEngine is ReentrancyGuard,Ownable{
    uint256 private constant PRICE_FEED_SCALE_FACTOR = 1e10;
    uint256 private constant TOKEN_DECIMAL_STANDARD = 1e18;
    uint256 private constant LIQUIDATION_THRESHOLD = 50; // x% over collateralized
-   uint256 private constant MINIMUM_HEALTH_FACTOR = 1;
-   uint256 private constant DISCOUNT_PRICE = 10;
+   uint256 private constant MINIMUM_HEALTH_FACTOR = 1; // 100% over-collateralization
+   uint256 private constant DISCOUNT_PRICE = 10; // 10% discount price to liquidator
    uint256 private constant PRECESION = 100;
    uint256 private constant LIQUIDATION_PRECESION = 1e18;
+
    // DSC contract instance!!!
    DecentralizeStableCoin private immutable i_dsc;
 
@@ -214,7 +215,7 @@ contract DSCEngine is ReentrancyGuard,Ownable{
    function reedemCollateral(
       address tokenCollateralAddress,
       uint256 amountCollateral
-   ) public zeroAmount(amountCollateral) isValidCollateralType(tokenCollateralAddress) nonReentrant{
+   ) public zeroAmount(amountCollateral) isValidCollateralType(tokenCollateralAddress) /**nonReentrant*/ {
       _reedemCollateral(tokenCollateralAddress, amountCollateral,msg.sender,msg.sender);
       _revertIfHealthFactorOfUserBreaks(msg.sender);
    }
@@ -299,11 +300,13 @@ contract DSCEngine is ReentrancyGuard,Ownable{
       collateralValueInUSD = getUserCollateralValue(user);
    }
 
-   function _getHealthFactor(address user) private view returns(uint256 healthFactor){
+   // make this private/internal
+   function _getHealthFactor(address user) public view returns(uint256 healthFactor){
       (uint256 totalDSCMinted, uint256 collateralValueInUSD) = _getUserInfo(user);
       if(totalDSCMinted >= collateralValueInUSD){
          revert DSCEngine_StableCoinValueCannotBeGreaterThanItsCollateralValue();
       }
+      // check
       uint256 collateralAdjustedForThreshold = ((collateralValueInUSD * LIQUIDATION_THRESHOLD) / PRECESION);
       return ((collateralAdjustedForThreshold * PRICE_FEED_SCALE_FACTOR) / totalDSCMinted);
    }
@@ -330,7 +333,7 @@ contract DSCEngine is ReentrancyGuard,Ownable{
       uint256 amountCollateral,
       address from,
       address to
-   ) private zeroAmount(amountCollateral) isValidCollateralType(tokenCollateralAddress) nonReentrant {
+   ) private zeroAmount(amountCollateral) isValidCollateralType(tokenCollateralAddress) /**nonReentrant*/ {
       s_userCollateralDeposit[from][tokenCollateralAddress] -= amountCollateral;
       emit DSCEngine_reedemDSC(from,to,tokenCollateralAddress,amountCollateral);
 
@@ -381,6 +384,7 @@ contract DSCEngine is ReentrancyGuard,Ownable{
         ) = priceFeed.latestRoundData();
       
       // (price * 1e10 * amountInETH) / 1e18  == $3426.09737...
+      // check
       return (((uint256(price) * PRICE_FEED_SCALE_FACTOR) * amount ) / TOKEN_DECIMAL_STANDARD);
    }
 
@@ -395,6 +399,7 @@ contract DSCEngine is ReentrancyGuard,Ownable{
       // LIQUIDATION_PRECESION -> 1e18
       // price(from chainlink) -> 200000000 == 2 * 1e8
       // PRICE_FEED_SCALE_FACTOR -> 1e10
+      // check
       debtAmountInUsd = (amount * LIQUIDATION_PRECESION) / (uint256(price) * PRICE_FEED_SCALE_FACTOR);
    }
 
@@ -402,7 +407,7 @@ contract DSCEngine is ReentrancyGuard,Ownable{
       return s_userCollateralDeposit[msg.sender][tokenAddress];
    }
 
-   function getAmountDSCUserMinted() public view returns(uint256){
+   function getUserDebt() public view returns(uint256){
       return s_amountDSCUserMinted[msg.sender];
    }
 
