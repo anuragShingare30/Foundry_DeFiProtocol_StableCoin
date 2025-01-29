@@ -74,7 +74,7 @@ contract DSCEngine is ReentrancyGuard,Ownable{
    // state variables
    uint256 private constant PRICE_FEED_SCALE_FACTOR = 1e10;
    uint256 private constant TOKEN_DECIMAL_STANDARD = 1e18;
-   uint256 private constant LIQUIDATION_THRESHOLD = 50; // x% over collateralized
+   uint256 private constant COLLATERALIZED_RATIO = 50; // x% over-collateralized
    uint256 private constant MINIMUM_HEALTH_FACTOR = 1; // 100% over-collateralization
    uint256 private constant DISCOUNT_PRICE = 10; // 10% discount price to liquidator
    uint256 private constant PRECESION = 100;
@@ -289,7 +289,9 @@ contract DSCEngine is ReentrancyGuard,Ownable{
       _revertIfHealthFactorOfUserBreaks(user);
    }
 
-   function getHealthFactor() public {}
+   function getHealthFactor() public view returns(uint256){
+      return _getHealthFactor(msg.sender);
+   }
 
 
    
@@ -303,11 +305,12 @@ contract DSCEngine is ReentrancyGuard,Ownable{
    // make this private/internal
    function _getHealthFactor(address user) public view returns(uint256 healthFactor){
       (uint256 totalDSCMinted, uint256 collateralValueInUSD) = _getUserInfo(user);
-      if(totalDSCMinted >= collateralValueInUSD){
-         revert DSCEngine_StableCoinValueCannotBeGreaterThanItsCollateralValue();
-      }
-      // check
-      uint256 collateralAdjustedForThreshold = ((collateralValueInUSD * LIQUIDATION_THRESHOLD) / PRECESION);
+      // // This condition is not required or invalid!!!
+      // if(totalDSCMinted >= collateralValueInUSD){
+      //    revert DSCEngine_StableCoinValueCannotBeGreaterThanItsCollateralValue();
+      // }
+      if(totalDSCMinted == 0) return type(uint256).max;
+      uint256 collateralAdjustedForThreshold = ((collateralValueInUSD * COLLATERALIZED_RATIO) / PRECESION);
       return ((collateralAdjustedForThreshold * PRICE_FEED_SCALE_FACTOR) / totalDSCMinted);
    }
 
@@ -373,6 +376,8 @@ contract DSCEngine is ReentrancyGuard,Ownable{
 
    // Converts ETH(wei) to USD value
    // 1e18 wei -> $3427.89
+   // PRICE_FEED_SCALE_FACTOR = 1e10
+   // TOKEN_DECIMAL_STANDARD = 1e18
    function getUSDValue(address collateralAddress,uint256 amount) public view returns(uint256){
       AggregatorV3Interface priceFeed = AggregatorV3Interface(s_priceFeeds[collateralAddress]);
       (
@@ -411,5 +416,12 @@ contract DSCEngine is ReentrancyGuard,Ownable{
       return s_amountDSCUserMinted[msg.sender];
    }
 
+   function getPriceFeedScaleFactor() public view returns(uint256){
+      return PRICE_FEED_SCALE_FACTOR;
+   }
+
+   function getTokenDecimalStandard() public view returns(uint256){
+      return TOKEN_DECIMAL_STANDARD;
+   }
 
 }
