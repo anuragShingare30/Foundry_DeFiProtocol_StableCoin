@@ -427,26 +427,17 @@ contract DSCEngineTest is Test{
     ///////////////////////
 
     function test_ImprovesHealthFactorAfterLiquidation() public {
-        // setup
-        vm.prank(USER);
-        MockMoreDebtDSC mockDsc = new MockMoreDebtDSC(wethUsdPriceFeed);
-        tokenAddresses = [address(mockDsc)];
-        priceFeedAddresses = [wethUsdPriceFeed];
-        address owner = msg.sender;
-        vm.prank(USER);
-        DSCEngine mockDscE = new DSCEngine(tokenAddresses,priceFeedAddresses,address(mockDsc));
-        mockDsc.transferOwnership(address(mockDscE));
-
-        // Arrange - User
-        vm.startPrank(USER);
-        ERC20Mock(weth).approve(address(mockDscE),DEPOSIT_AMOUNT);
-        mockDscE.depositCollateralAndMintDSC(weth, DEPOSIT_AMOUNT, MINT_AMOUNT);
-        vm.stopPrank();
-
-        // Arrange - Liquidator
-        vm.startPrank(liquidator);
+        // setup -> deploy mock dsc and dscEngine contract
         
-        vm.stopPrank();
+
+        // Arrange User -> let a user deploy ETH and mint DSC
+        
+
+        // Arrange Liquidator -> Let liquidator contains some ETH and DSC to pay user Debt!!!
+
+
+        // Act -> if ETH value drops, let liquidator pays the user debt partially/fully!!!
+        
     }
 
 }

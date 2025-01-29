@@ -289,8 +289,8 @@ contract DSCEngine is ReentrancyGuard,Ownable{
       _revertIfHealthFactorOfUserBreaks(user);
    }
 
-   function getHealthFactor() public view returns(uint256){
-      return _getHealthFactor(msg.sender);
+   function getHealthFactor(address user) public view returns(uint256){
+      return _getHealthFactor(user);
    }
 
 
