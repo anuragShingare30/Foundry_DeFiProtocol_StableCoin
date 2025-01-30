@@ -78,6 +78,72 @@ contract DSCEngineTest is Test{
 
 
     ///////////////////////////////////
+    // BASIC FUNCTION TEST //
+    ///////////////////////////////////
+
+    function test_depositCollateralFunction() public {
+        vm.startPrank(USER);
+        uint256 INITIAL_BALANCE = dscEngine.getUserCollateralDeposit(weth);
+        console.log(INITIAL_BALANCE);
+        ERC20Mock(weth).approve(address(dscEngine), DEPOSIT_AMOUNT);
+        dscEngine.depositCollateral(weth, DEPOSIT_AMOUNT);
+        uint256 DEPOSIT_BALANCE = dscEngine.getUserCollateralDeposit(weth);
+        console.log(DEPOSIT_BALANCE);
+        vm.stopPrank();
+        assert(INITIAL_BALANCE+DEPOSIT_AMOUNT == DEPOSIT_BALANCE);
+    }
+
+    function test_MintDscFunction() public {
+        vm.startPrank(USER);
+        ERC20Mock(weth).approve(address(dscEngine), DEPOSIT_AMOUNT);
+        dscEngine.depositCollateral(weth, DEPOSIT_AMOUNT);
+        uint256 INTITIAL_BALANCE = dscEngine.getUserDebt();
+        console.log(INTITIAL_BALANCE);
+        dscEngine.mintDSC(MINT_AMOUNT);
+        uint256 AFTER_BALANCE = dscEngine.getUserDebt();
+        console.log(AFTER_BALANCE);
+        vm.stopPrank();
+        assert(INTITIAL_BALANCE+MINT_AMOUNT == AFTER_BALANCE);
+    }
+
+    // Always check the health factor before redeeming.
+    // In our code, if HF breaks it will revert
+    function test_RedeemCollateralFunction() public {
+        vm.startPrank(USER);
+        ERC20Mock(weth).approve(address(dscEngine),DEPOSIT_AMOUNT);
+        dscEngine.depositCollateral(weth, DEPOSIT_AMOUNT);
+        // 100 ether
+        uint256 DEPOSITED_BALANCE = dscEngine.getUserCollateralDeposit(weth);
+
+        dscEngine.mintDSC(MINT_AMOUNT);
+        
+        dscEngine.reedemCollateral(weth, REDEEM_AMOUNT);  
+        // 90 ether  
+        uint256 REDEEM_BALANCE = dscEngine.getUserCollateralDeposit(weth);
+        vm.stopPrank();
+        assert(REDEEM_BALANCE == DEPOSITED_BALANCE-REDEEM_AMOUNT);
+    }
+
+    function test_BurnDSCFunction() public {
+        vm.startPrank(USER);
+        ERC20Mock(weth).approve(address(dscEngine),DEPOSIT_AMOUNT);
+        dscEngine.depositCollateral(weth, DEPOSIT_AMOUNT);
+
+        dscEngine.mintDSC(MINT_AMOUNT);
+        // 10 ether
+        uint256 INITIAL_DEBT = dscEngine.getUserDebt();
+        console.log(INITIAL_DEBT);
+        dsc.approve(address(dscEngine), MINT_AMOUNT);
+        dscEngine.burnDSC(BURN_AMOUNT);
+        // 5 ether
+        uint256 BURN_DEBT = dscEngine.getUserDebt();
+        console.log(BURN_DEBT);
+        vm.stopPrank();
+        assert(BURN_DEBT == INITIAL_DEBT-BURN_AMOUNT);
+    }
+
+
+    ///////////////////////////////////
     // Price Feed functions test //
     ///////////////////////////////////
 
@@ -344,70 +410,7 @@ contract DSCEngineTest is Test{
     //     assert(userBalance == 0);
     // }
 
-    ///////////////////////////////////
-    // BASIC FUNCTION TEST //
-    ///////////////////////////////////
-
-    function test_depositCollateralFunction() public {
-        vm.startPrank(USER);
-        uint256 INITIAL_BALANCE = dscEngine.getUserCollateralDeposit(weth);
-        console.log(INITIAL_BALANCE);
-        ERC20Mock(weth).approve(address(dscEngine), DEPOSIT_AMOUNT);
-        dscEngine.depositCollateral(weth, DEPOSIT_AMOUNT);
-        uint256 DEPOSIT_BALANCE = dscEngine.getUserCollateralDeposit(weth);
-        console.log(DEPOSIT_BALANCE);
-        vm.stopPrank();
-        assert(INITIAL_BALANCE+DEPOSIT_AMOUNT == DEPOSIT_BALANCE);
-    }
-
-    function test_MintDscFunction() public {
-        vm.startPrank(USER);
-        ERC20Mock(weth).approve(address(dscEngine), DEPOSIT_AMOUNT);
-        dscEngine.depositCollateral(weth, DEPOSIT_AMOUNT);
-        uint256 INTITIAL_BALANCE = dscEngine.getUserDebt();
-        console.log(INTITIAL_BALANCE);
-        dscEngine.mintDSC(MINT_AMOUNT);
-        uint256 AFTER_BALANCE = dscEngine.getUserDebt();
-        console.log(AFTER_BALANCE);
-        vm.stopPrank();
-        assert(INTITIAL_BALANCE+MINT_AMOUNT == AFTER_BALANCE);
-    }
-
-    // Always check the health factor before redeeming.
-    // In our code, if HF breaks it will revert
-    function test_RedeemCollateralFunction() public {
-        vm.startPrank(USER);
-        ERC20Mock(weth).approve(address(dscEngine),DEPOSIT_AMOUNT);
-        dscEngine.depositCollateral(weth, DEPOSIT_AMOUNT);
-        // 100 ether
-        uint256 DEPOSITED_BALANCE = dscEngine.getUserCollateralDeposit(weth);
-
-        dscEngine.mintDSC(MINT_AMOUNT);
-        
-        dscEngine.reedemCollateral(weth, REDEEM_AMOUNT);  
-        // 90 ether  
-        uint256 REDEEM_BALANCE = dscEngine.getUserCollateralDeposit(weth);
-        vm.stopPrank();
-        assert(REDEEM_BALANCE == DEPOSITED_BALANCE-REDEEM_AMOUNT);
-    }
-
-    function test_BurnDSCFunction() public {
-        vm.startPrank(USER);
-        ERC20Mock(weth).approve(address(dscEngine),DEPOSIT_AMOUNT);
-        dscEngine.depositCollateral(weth, DEPOSIT_AMOUNT);
-
-        dscEngine.mintDSC(MINT_AMOUNT);
-        // 10 ether
-        uint256 INITIAL_DEBT = dscEngine.getUserDebt();
-        console.log(INITIAL_DEBT);
-        dsc.approve(address(dscEngine), MINT_AMOUNT);
-        dscEngine.burnDSC(BURN_AMOUNT);
-        // 5 ether
-        uint256 BURN_DEBT = dscEngine.getUserDebt();
-        console.log(BURN_DEBT);
-        vm.stopPrank();
-        assert(BURN_DEBT == INITIAL_DEBT-BURN_AMOUNT);
-    }
+    
     
     ///////////////////////////////////
     // HEALTH FACTOR TEST //

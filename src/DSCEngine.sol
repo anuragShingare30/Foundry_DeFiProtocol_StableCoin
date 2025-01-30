@@ -424,4 +424,12 @@ contract DSCEngine is ReentrancyGuard,Ownable{
       return TOKEN_DECIMAL_STANDARD;
    }
 
+   function getCollateralAddresses() public view returns(address[] memory){
+      return s_collateralAddresses;
+   }
+
+   function getCollateralBalanceOfUser(address user, address collateralAddress) public view returns(uint256){
+      return s_userCollateralDeposit[user][collateralAddress];
+   }
+
 }
