@@ -8,6 +8,7 @@ import {ReentrancyGuard } from "lib/openzeppelin-contracts/contracts/utils/Reent
 import {DecentralizeStableCoin} from "src/DecentralizeStableCoin.sol";
 import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {AggregatorV3Interface} from "lib/chainlink-brownie-contracts/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
+import {OracleLib} from "./libraries/OracleLib.sol";
 
 /**
  * @title Decentralize stablecoin engine
@@ -60,6 +61,9 @@ contract DSCEngine is ReentrancyGuard,Ownable{
 
 
    // type declaration
+
+   // OracleLib is an library
+   using OracleLib for AggregatorV3Interface;
 
    // (WETH/WBTC) contract address to pricefeed!!!
    mapping (address collateralAddress => address priceFeed) private s_priceFeeds;
@@ -430,6 +434,14 @@ contract DSCEngine is ReentrancyGuard,Ownable{
 
    function getCollateralBalanceOfUser(address user, address collateralAddress) public view returns(uint256){
       return s_userCollateralDeposit[user][collateralAddress];
+   }
+
+   function getUserInfo(address user) public view returns(uint256 totalDSCMinted,uint256 collateralValueInUSD){
+      (totalDSCMinted,collateralValueInUSD) = _getUserInfo(user);
+   }
+
+   function getTokenPriceFeed(address tokenCollateralAddress) public view returns(address){
+      return s_priceFeeds[tokenCollateralAddress];
    }
 
 }

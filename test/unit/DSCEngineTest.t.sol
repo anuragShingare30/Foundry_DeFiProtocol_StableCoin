@@ -97,12 +97,15 @@ contract DSCEngineTest is Test{
         vm.startPrank(USER);
         ERC20Mock(weth).approve(address(dscEngine), DEPOSIT_AMOUNT);
         dscEngine.depositCollateral(weth, DEPOSIT_AMOUNT);
+
         uint256 INTITIAL_BALANCE = dscEngine.getUserDebt();
         console.log(INTITIAL_BALANCE);
+
         dscEngine.mintDSC(MINT_AMOUNT);
         uint256 AFTER_BALANCE = dscEngine.getUserDebt();
         console.log(AFTER_BALANCE);
         vm.stopPrank();
+        
         assert(INTITIAL_BALANCE+MINT_AMOUNT == AFTER_BALANCE);
     }
 

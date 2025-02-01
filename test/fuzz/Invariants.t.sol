@@ -46,9 +46,12 @@ contract Invariants is StdInvariant,Test{
         uint256 wethValue = dscEngine.getUSDValue(weth, totalWethDeposited);
         uint256 wbtcValue = dscEngine.getUSDValue(wbtc, totalWBtcDeposited);
 
-        console.log(totalSupply);
-        console.log(totalWethDeposited);
-        console.log(totalWBtcDeposited);
+        console.log("totalSupply:",totalSupply);
+        console.log("totalWethDeposited",totalWethDeposited);
+        console.log("totalWBtcDeposited",totalWBtcDeposited);
+        
+        uint256 count = handler.timesMintIsCalled();
+        console.log("Times my mint function is called:",count);
 
         assert(wethValue+wbtcValue >= totalSupply);
     }
