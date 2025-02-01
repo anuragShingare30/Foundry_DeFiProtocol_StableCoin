@@ -36,20 +36,21 @@ contract FuzzTest is StdInvariant,Test{
         targetContract(address(dscEngine));
     }
 
-    // function invariant_protocolMustHaveMoreValueThanTotalSupply() public {
-    //     uint256 totalSupply = dsc.totalSupply();
-    //     uint256 totalWethDeposited = IERC20(weth).balanceOf(address(dscEngine));
-    //     uint256 totalWBtcDeposited = IERC20(wbtc).balanceOf(address(dscEngine));
+    // stateless fuzzing test
+    function invariant_Fuzz_protocolMustHaveMoreValueThanTotalSupply() public {
+        uint256 totalSupply = dsc.totalSupply();
+        uint256 totalWethDeposited = IERC20(weth).balanceOf(address(dscEngine));
+        uint256 totalWBtcDeposited = IERC20(wbtc).balanceOf(address(dscEngine));
 
-    //     uint256 wethValue = dscEngine.getUSDValue(weth, totalWethDeposited);
-    //     uint256 wbtcValue = dscEngine.getUSDValue(wbtc, totalWBtcDeposited);
+        uint256 wethValue = dscEngine.getUSDValue(weth, totalWethDeposited);
+        uint256 wbtcValue = dscEngine.getUSDValue(wbtc, totalWBtcDeposited);
 
-    //     console.log(totalSupply);
-    //     console.log(totalWethDeposited);
-    //     console.log(totalWBtcDeposited);
+        console.log(totalSupply);
+        console.log(totalWethDeposited);
+        console.log(totalWBtcDeposited);
 
-    //     assert(wethValue+wbtcValue >= totalSupply);
-    // }
+        assert(wethValue+wbtcValue >= totalSupply);
+    }
     
     
 }

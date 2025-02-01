@@ -35,6 +35,7 @@ contract Invariants is StdInvariant,Test{
         (dsc,dscEngine,helperConfig) = deployDSC.run();
         (wethUsdPriceFeed,wbtcUsdPriceFeed,weth,wbtc,deployerKey) = helperConfig.localNetworkConfig();
         handler = new Handler(dscEngine,dsc);
+        // this ensures that contract will use all functions present in handler contract
         targetContract(address(handler));
     }
 

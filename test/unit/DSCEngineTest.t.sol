@@ -254,7 +254,7 @@ contract DSCEngineTest is Test{
         vm.stopPrank();
     }
 
-    function test_RevertsIf_MintDSCBreaksHealthFactor() public depositCollateral(){
+    function test_RevertsIf_MintDSCBreaksHealthFactor() public depositCollateral(){ 
         (,int price,,,) = MockV3Aggregator(wethUsdPriceFeed).latestRoundData();
         uint256 amountDSCMinted =(((uint256(price)) * DEPOSIT_AMOUNT * PRICE_FEED_SCALE_FACTOR) / TOKEN_DECIMAL_STANDARD);
 
