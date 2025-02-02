@@ -41,7 +41,7 @@ import { MockV3Aggregator } from "./MockV3Aggregator.sol";
 * This is the contract meant to be owned by DSCEngine. It is a ERC20 token that can be minted and burned by the
 DSCEngine smart contract.
  */
-abstract contract MockMoreDebtDSC is ERC20Burnable, Ownable {
+contract MockMoreDebtDSC is ERC20Burnable, Ownable {
     error DecentralizedStableCoin__AmountMustBeMoreThanZero();
     error DecentralizedStableCoin__BurnAmountExceedsBalance();
     error DecentralizedStableCoin__NotZeroAddress();
@@ -56,7 +56,8 @@ abstract contract MockMoreDebtDSC is ERC20Burnable, Ownable {
     Related code changes can be viewed in this commit:
     https://github.com/OpenZeppelin/openzeppelin-contracts/commit/13d5e0466a9855e9305119ed383e54fc913fdc60
     */
-    constructor(address _mockAggregator) ERC20("DecentralizedStableCoin", "DSC") {
+    constructor(address _mockAggregator) ERC20("DecentralizedStableCoin", "DSC")
+    Ownable(msg.sender) {
         mockAggregator = _mockAggregator;
     }
 

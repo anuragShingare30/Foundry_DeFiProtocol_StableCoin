@@ -59,7 +59,7 @@ contract Handler is Test{
         if(maxAmountDSCToMint == 0){
             return;
         }
-        amountDSCToMint = bound(amountDSCToMint,1,uint256(maxAmountDSCToMint));
+        amountDSCToMint = bound(amountDSCToMint,1,MAX_DEPOSIT_SIZE);
         if(amountDSCToMint == 0){
             return;
         }

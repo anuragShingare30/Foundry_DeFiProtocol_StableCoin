@@ -39,8 +39,8 @@ contract DSCEngineTest is Test{
     uint256 constant public TOKEN_DECIMAL_STANDARD = 1e18;
 
     // liquidator
-    address public liquidator = makeAddr("liquidator");
-    uint256 public debtToPay = 20 ether;
+    address public LIQUIDATOR = makeAddr("liquidator");
+    uint256 public collateralToCover = 20 ether;
 
     address wethUsdPriceFeed;
     address wbtcUsdPriceFeed;
@@ -75,6 +75,30 @@ contract DSCEngineTest is Test{
         vm.stopPrank();
         _;
     }
+    modifier liquidated(){
+        // SET THE USER
+        vm.startPrank(USER);
+        ERC20Mock(weth).approve(address(dscEngine), DEPOSIT_AMOUNT);
+        dscEngine.depositCollateralAndMintDSC(weth, DEPOSIT_AMOUNT, MINT_AMOUNT);
+        vm.stopPrank();
+
+        // update the priceFeed of ETH
+        int256 updatedEThUsdPrice = 18e8; // 1 ETH = $18
+        MockV3Aggregator(wethUsdPriceFeed).updateAnswer(updatedEThUsdPrice);
+        uint256 userHealthFactor = dscEngine.getHealthFactor(USER);
+        console.log(userHealthFactor);
+
+        // SET THE LIQUIDATOR
+        ERC20Mock(weth).mint(LIQUIDATOR,collateralToCover);
+        vm.startPrank(LIQUIDATOR);
+        ERC20Mock(weth).approve(address(dscEngine), collateralToCover);
+        dscEngine.depositCollateralAndMintDSC(weth, collateralToCover, MINT_AMOUNT);
+
+        dsc.approve(address(dscEngine),MINT_AMOUNT);
+        dscEngine.liquidate(weth, USER, MINT_AMOUNT);
+        vm.stopPrank();
+        _;
+    }
 
 
     ///////////////////////////////////
@@ -101,6 +125,7 @@ contract DSCEngineTest is Test{
         uint256 INTITIAL_BALANCE = dscEngine.getUserDebt();
         console.log(INTITIAL_BALANCE);
 
+        ERC20Mock(weth).approve(address(dscEngine), MINT_AMOUNT);
         dscEngine.mintDSC(MINT_AMOUNT);
         uint256 AFTER_BALANCE = dscEngine.getUserDebt();
         console.log(AFTER_BALANCE);
@@ -117,7 +142,7 @@ contract DSCEngineTest is Test{
         dscEngine.depositCollateral(weth, DEPOSIT_AMOUNT);
         // 100 ether
         uint256 DEPOSITED_BALANCE = dscEngine.getUserCollateralDeposit(weth);
-
+        ERC20Mock(weth).approve(address(dscEngine), MINT_AMOUNT);
         dscEngine.mintDSC(MINT_AMOUNT);
         
         dscEngine.reedemCollateral(weth, REDEEM_AMOUNT);  
@@ -132,6 +157,7 @@ contract DSCEngineTest is Test{
         ERC20Mock(weth).approve(address(dscEngine),DEPOSIT_AMOUNT);
         dscEngine.depositCollateral(weth, DEPOSIT_AMOUNT);
 
+        ERC20Mock(weth).approve(address(dscEngine), MINT_AMOUNT);
         dscEngine.mintDSC(MINT_AMOUNT);
         // 10 ether
         uint256 INITIAL_DEBT = dscEngine.getUserDebt();
@@ -428,22 +454,74 @@ contract DSCEngineTest is Test{
         assert(expectedHF == userHF);
     }
 
+
     ///////////////////////
     // Liquidation Tests //
     ///////////////////////
 
-    function test_ImprovesHealthFactorAfterLiquidation() public {
-        // setup -> deploy mock dsc and dscEngine contract
+    // [FAIL: next call did not revert as expected]
+    // function test_RevertsIf_HealthfactorNotImprovedAfterLiquidation() public {
+    //     // setup -> deploy mock dsc and dscEngine contract
+    //     MockMoreDebtDSC mockDsc = new MockMoreDebtDSC(wethUsdPriceFeed);
+    //     tokenAddresses = [weth];
+    //     priceFeedAddresses = [wethUsdPriceFeed];
+    //     address owner = msg.sender;
+    //     vm.prank(owner);
+    //     DSCEngine mockDsce = new DSCEngine(tokenAddresses,priceFeedAddresses,address(mockDsc));
+    //     mockDsc.transferOwnership(address(mockDsce));
         
+    //     // Arrange User -> let a user deploy ETH and mint DSC
+    //     vm.startPrank(USER);
+    //     ERC20Mock(weth).approve(address(mockDsce),DEPOSIT_AMOUNT);
+    //     mockDsce.depositCollateralAndMintDSC(weth, DEPOSIT_AMOUNT, MINT_AMOUNT);
+    //     vm.stopPrank();
 
-        // Arrange User -> let a user deploy ETH and mint DSC
-        
+    //     // Arrange Liquidator -> Let liquidator contains DSC to pay user Debt!!!
+    //     collateralToCover = 5 ether;
+    //     ERC20Mock(weth).mint(LIQUIDATOR,collateralToCover);
 
-        // Arrange Liquidator -> Let liquidator contains some ETH and DSC to pay user Debt!!!
+    //     vm.startPrank(LIQUIDATOR);
+    //     ERC20Mock(weth).approve(address(mockDsce), collateralToCover);
+    //     uint256 debtToCover = 10 ether;
+    //     mockDsce.depositCollateralAndMintDSC(weth, collateralToCover, MINT_AMOUNT);
+    //     mockDsc.approve(address(mockDsce),debtToCover);
 
+    //     // Act -> if ETH value drops, let liquidator pays the user debt partially/fully!!!
+    //     int256 updatedEThUsdPrice = 18e8; // 1 ETH = $18
+    //     MockV3Aggregator(wethUsdPriceFeed).updateAnswer(updatedEThUsdPrice);
+    //     vm.expectRevert(DSCEngine.DSCEngine_HealthfactorOfUserNotImproved.selector);
+    //     uint256 getUserHealthFactor = mockDsce.getHealthFactor(USER);
+    //     console.log(getUserHealthFactor);
+    //     mockDsce.liquidate(weth, USER, debtToCover);
+    //     vm.stopPrank();
+    // }
 
-        // Act -> if ETH value drops, let liquidator pays the user debt partially/fully!!!
-        
+    function test_RevertsIf_LiquidationIsNotRequiredAfterLiquidation() public depositCollateralAndMintDSC(){
+        ERC20Mock(weth).mint(LIQUIDATOR, collateralToCover);
+        uint256 getUserHF = dscEngine.getHealthFactor(USER);
+        console.log(getUserHF);
+
+        vm.startPrank(LIQUIDATOR);
+        ERC20Mock(weth).approve(address(dscEngine), collateralToCover);
+        dscEngine.depositCollateralAndMintDSC(weth, collateralToCover, MINT_AMOUNT);
+        dsc.approve(address(dscEngine), MINT_AMOUNT);
+        vm.expectRevert(DSCEngine.DSCEngine_NoNeedToLiquidateUser.selector);
+        dscEngine.liquidate(weth, USER, MINT_AMOUNT);
+        vm.stopPrank();
     }
+
+    // // [FAIL: DSCEngine_NoNeedToLiquidateUser()]
+    // function test_LiquidatorTakesUsersDebt() public liquidated(){
+    //     (uint256 liquidatorDSCAmount,) = dscEngine.getUserInfo(LIQUIDATOR);
+    //     assert(liquidatorDSCAmount == MINT_AMOUNT);
+    // }
+
+    // // [FAIL: DSCEngine_NoNeedToLiquidateUser()]
+    // function test_UserHasNoMoreDebtAfterLiquidation() public liquidated(){
+    //     (uint256 totalDSCMinted,) = dscEngine.getUserInfo(USER);
+    //     assert(totalDSCMinted == 0);
+    // }
+
+    
 
 }

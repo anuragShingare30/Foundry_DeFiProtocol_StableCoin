@@ -79,6 +79,7 @@ contract DSCEngine is ReentrancyGuard,Ownable{
    uint256 private constant PRICE_FEED_SCALE_FACTOR = 1e10;
    uint256 private constant TOKEN_DECIMAL_STANDARD = 1e18;
    uint256 private constant COLLATERALIZED_RATIO = 50; // x% over-collateralized
+   // uint256 private constant MINIMUM_HEALTH_FACTOR = 1e18; // 100% over-collateralization
    uint256 private constant MINIMUM_HEALTH_FACTOR = 1; // 100% over-collateralization
    uint256 private constant DISCOUNT_PRICE = 10; // 10% discount price to liquidator
    uint256 private constant PRECESION = 100;
@@ -238,7 +239,7 @@ contract DSCEngine is ReentrancyGuard,Ownable{
 
    /** 
       @notice liquidate system function
-      @param collateral The ERC20 token address of the collateral you're using to make the protocol solvent again.
+      @param tokenCollateralAddress The ERC20 token address of the collateral you're using to make the protocol solvent again.
       @param user The user who needs to get liquidated
       @param debtAmount The amount of DSC(Ex:100 DSC) you want to burn to cover the user's debt.(partially/fully)
 
@@ -258,10 +259,10 @@ contract DSCEngine is ReentrancyGuard,Ownable{
       
    */
    function liquidate(
-      address collateral,
+      address tokenCollateralAddress,
       address user,
       uint256 debtAmount
-   ) public isValidCollateralType(collateral) zeroAmount(debtAmount) nonReentrant {
+   ) public isValidCollateralType(tokenCollateralAddress) zeroAmount(debtAmount) nonReentrant {
 
       // check the validity for user to get liquidate
       uint256 startingUserHealthFactor = _getHealthFactor(user);
@@ -272,7 +273,7 @@ contract DSCEngine is ReentrancyGuard,Ownable{
       // get debtAmount in collateral
       // debtAmount -> $100 worth of DSC == 100 wei
       // debtAmountInUsd -> $100 worth of ETH
-      uint256 debtAmountInUsd = getDebtAmountInUsd(collateral,debtAmount);
+      uint256 debtAmountInUsd = getDebtAmountInUsd(tokenCollateralAddress,debtAmount);
 
       // get the total amount with 10% discount user need to pay to liquidator
       // debtAmountInUsd -> $100
@@ -282,7 +283,7 @@ contract DSCEngine is ReentrancyGuard,Ownable{
       // transfer the total collateral amount to liquidator
       // user will redeem collateral for DSC
       // and, burn that much amount of DSC
-      _reedemCollateral(collateral, totalAmountOfDebt, user, msg.sender);
+      _reedemCollateral(tokenCollateralAddress, totalAmountOfDebt, user, msg.sender);
       _burnDSC(debtAmount, user, msg.sender);
 
       // check the ending health factor
@@ -368,7 +369,7 @@ contract DSCEngine is ReentrancyGuard,Ownable{
 
 
 
-   // getter function
+   // GETTER FUNCTIONS
 
    function getUserCollateralValue(address user) public view returns(uint256 totalCollateralValueInUSD){
       for(uint256 i=0;i<s_collateralAddresses.length;i++){

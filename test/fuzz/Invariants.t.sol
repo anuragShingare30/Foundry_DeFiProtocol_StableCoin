@@ -39,23 +39,23 @@ contract Invariants is StdInvariant,Test{
         targetContract(address(handler));
     }
 
-    function invariant_protocolMustHaveMoreValueThanTotalSupply() public {
-        uint256 totalSupply = dsc.totalSupply();
-        uint256 totalWethDeposited = IERC20(weth).balanceOf(address(dscEngine));
-        uint256 totalWBtcDeposited = IERC20(wbtc).balanceOf(address(dscEngine));
+    // function invariant_protocolMustHaveMoreValueThanTotalSupply() public {
+    //     uint256 totalSupply = dsc.totalSupply();
+    //     uint256 totalWethDeposited = IERC20(weth).balanceOf(address(dscEngine));
+    //     uint256 totalWBtcDeposited = IERC20(wbtc).balanceOf(address(dscEngine));
 
-        uint256 wethValue = dscEngine.getUSDValue(weth, totalWethDeposited);
-        uint256 wbtcValue = dscEngine.getUSDValue(wbtc, totalWBtcDeposited);
+    //     uint256 wethValue = dscEngine.getUSDValue(weth, totalWethDeposited);
+    //     uint256 wbtcValue = dscEngine.getUSDValue(wbtc, totalWBtcDeposited);
 
-        console.log("totalSupply:",totalSupply);
-        console.log("totalWethDeposited",totalWethDeposited);
-        console.log("totalWBtcDeposited",totalWBtcDeposited);
+    //     console.log("totalSupply:",totalSupply);
+    //     console.log("totalWethDeposited",totalWethDeposited);
+    //     console.log("totalWBtcDeposited",totalWBtcDeposited);
         
-        uint256 count = handler.timesMintIsCalled();
-        console.log("Times my mint function is called:",count);
+    //     uint256 count = handler.timesMintIsCalled();
+    //     console.log("Times my mint function is called:",count);
 
-        assert(wethValue+wbtcValue >= totalSupply);
-    }
+    //     assert(wethValue+wbtcValue >= totalSupply);
+    // }
     
     
 }

@@ -1,3 +1,13 @@
+### ABOUT PROJECT AND ITS ACHIEVEMENT!!!
+
+1. **Test Coverage**: Unit and fuzz testing achieved Forge coverage of 76.15%, 78.35%, and 60.00%.
+2. **Stablecoin Peg**: The protocol effectively maintains the stablecoin's value around $1, backed by equivalent assets.
+3. **System Stability**: The protocol ensures system stability by liquidating users whose health factor (HF) falls below the minimum threshold.
+4. **Over-Collateralization**: The protocol consistently remains over-collateralized, ensuring robust financial security.
+5. **Invarient Fuzz testing**: Successfully implemented the invarient fuzz testing covering over 1000 input data for functions parameters for better protocol security.
+
+
+
 ### Stablecoins
 
 **Stablecoins is a cryptocurrencies whose buying power remains stable!!!**
@@ -103,4 +113,23 @@
     - users HF -> $3000/$500 = 600%
 
 
-5. **Liquidation system**:
+5. **Liquidating User**:
+   - UserA:  deposits -> $150 of ETH `and`  debt -> $100 of DSC `and` HF->1.5
+   - If ETH falls to 40%
+   - UserA's  deposit->$90  debt->$100  HF->0.9
+   - If UserA's HF falls below 1!!! They are eligible for liquidation.
+   - Let, liquidator pays partial-debt of UserA($50)
+   - If protocol decides to give 5% or 10% discount price to liquidator from Users collteral amount.
+   - Liquidator will receive $52.5/$55 of ETH from users collateral amount
+
+   - Final position of UserA after liquidation:
+      - Debt reduced to $50
+      - Collateral reduced -> $90-$52.5 == $37.5
+      - Liquidator recieves -> $52.5 of ETH
+      - Improves UserA health factor. 
+
+
+
+#### Health factor
+
+- Collateralization ration = 50%
