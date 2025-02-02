@@ -86,6 +86,14 @@
 
 #### Important Functions in Stablecoins
 
+**Note: In protocols we will keep some x% of Liquidation_Threshold that determines the maximum amount of depositColllateral value that is safe**
+
+- If userDeposit -> 2 ETH($4000)
+- And, LIQUIDATION_THRESHOLD = 50%
+- So, Considered_Valid_Collateral => ($4000 * 0.5 == $2000)
+- This value can be considered for minting and burning or redeeming.
+
+
 
 1. **depositCollateral**:
     - User deposits 2 ETH.
@@ -132,4 +140,19 @@
 
 #### Health factor
 
-- Collateralization ration = 50%
+- LIQUIDATION_THRESHOLD = 50%
+
+**Valid_Collateral** = (collateralAmount * LIQUIDATION_THRESHOLD)
+**Health_Factor** = ((Valid_Collateral * 1e10)/totalDSCMinted)
+
+
+1. **Safe Health factor**:
+   - Deposit->1 ETH($2000)  Debt->1000 DSC($1000)
+   - Valid collateral -> $2000*0.5 == $1000
+   - Health factor -> (($1000 * 1e10)/$1000) == 1 * 1e10
+
+
+2. **Poorer Health factor**:
+    - Deposit->0.5 ETH($1000)  Debt->800 DSC($800)  
+    - Valid collateral -> $1000*0.5 == $500
+    - Health factor -> (($500 * 1e10)/$800) == 0.625 * 1e10
