@@ -117,6 +117,7 @@
     - User Debt -> 1000 DSC($1000)
     - HF -> $4000/$1000 = 400%
     - User deposit -> 2ETH ($4000)
+    - We can consider LIQUIDATION_THRESHOLD here!!!
     
 3. **redeem collateral**:
     - Protocol ensures that users HF remains stable after redeeming!!!

@@ -315,7 +315,9 @@ contract DSCEngine is ReentrancyGuard,Ownable{
       //    revert DSCEngine_StableCoinValueCannotBeGreaterThanItsCollateralValue();
       // }
       if(totalDSCMinted == 0) return type(uint256).max;
+      // collateralAdjustedForThreshold -> considered valid collateral
       uint256 collateralAdjustedForThreshold = ((collateralValueInUSD * COLLATERALIZED_RATIO) / PRECESION);
+      // PRICE_FEED_SCALE_FACTOR -> 1e10
       return ((collateralAdjustedForThreshold * PRICE_FEED_SCALE_FACTOR) / totalDSCMinted);
    }
 
@@ -381,6 +383,7 @@ contract DSCEngine is ReentrancyGuard,Ownable{
 
    // Converts ETH(wei) to USD value
    // 1e18 wei -> $3427.89
+   // 1 ETH -> $3427.89
    // PRICE_FEED_SCALE_FACTOR = 1e10
    // TOKEN_DECIMAL_STANDARD = 1e18
    function getUSDValue(address collateralAddress,uint256 amount) public view returns(uint256){
