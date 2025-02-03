@@ -6,6 +6,15 @@ import {DSCEngine} from "src/DSCEngine.sol";
 import {DecentralizeStableCoin} from "src/DecentralizeStableCoin.sol";
 import {DeployDSC} from "script/Deploy.s.sol";
 
+/**
+ * @title  DecentralizeStableCoinTest
+ * @author anurag shingare
+ * @notice This contract contains basic test function for DecentralizeStableCoin contract
+ * @dev We will cover the following functions test:
+    a. burnDSC function test
+    b. mintDSC function test
+ */
+
 
 contract DecentralizeStableCoinTest is Test{
     DSCEngine dscEngine;

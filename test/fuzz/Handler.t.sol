@@ -12,6 +12,7 @@ import {MockV3Aggregator} from "../mocks/MockV3Aggregator.sol";
  * @title  Writing Handler contract for our fuzz testing
  * @author anurag shingare
  * @notice Contract represents the handler contract we will use in Fuzz testing
+ * @dev Our Invarient contract will target this specific contract functions for test with random input data.
  */
 
 contract Handler is Test{

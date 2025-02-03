@@ -19,6 +19,17 @@ import {MockMoreDebtDSC} from "../mocks/MockMoreDebtDSC.sol";
  * @author anurag shingare
  * @notice Testing exteranal and internal functions for DSCEngine smart contracts. 
  * @dev We will import the DSC,DSCEngine and helperconfig contract from deploy script.
+ * @dev We will perform the following functions test in this contract:
+    a. Constructor params test
+    b. Chainlink price feeds test
+    c. Deposit collateral test
+    d. MintDSC function
+    e. Deposit and MintDSC function
+    f. redeem collateral function
+    g. burnDSC and redeem collateral and burnDSC function
+    h. Liqudation system function
+    i. Get user health factor function
+    j. Checking all basic functions working flow!!!
  */
 
 contract DSCEngineTest is Test{

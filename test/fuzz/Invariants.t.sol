@@ -15,7 +15,9 @@ import {Handler} from "./Handler.t.sol";
  * @author anurag shingare
  * @notice We will write fuzz test for our invarients
  * @dev The invarients which we will cover:
-        a. totalDSCMinted should always be less than totalDepositCollateral.
+        a. totalDSCMinted > totalDepositCollateral.
+        b. Above condition can be considered as invarient for our contract.
+        c. We can find many relevant invarients in main contract and can performed fuzz test for them
  */
 
 contract Invariants is StdInvariant,Test{

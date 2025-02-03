@@ -1,4 +1,4 @@
-### ABOUT PROJECT AND ITS ACHIEVEMENT!!!
+### PROJECT ACHIEVEMENTS!!!
 
 1. **Test Coverage**: Unit and fuzz testing achieved Forge coverage of 76.15%, 78.35%, and 60.00%.
 2. **Stablecoin Peg**: The protocol effectively maintains the stablecoin's value around $1, backed by equivalent assets.
@@ -6,6 +6,16 @@
 4. **Over-Collateralization**: The protocol consistently remains over-collateralized, ensuring robust financial security.
 5. **Invarient Fuzz testing**: Successfully implemented the invarient fuzz testing covering over 1000 input data for functions parameters for better protocol security.
 
+
+### Some important functions we should keep in mind.
+
+1. **Deposit collateral function**
+2. **mintDSC function**
+3. **Redeem collateral function**
+4. **burnDSC function**
+5. **Get user health factor function**
+6. **Liquidate user when user has less health factor!!!**
+7. **Chainlink price feeds**
 
 
 ### Stablecoins
@@ -98,10 +108,10 @@
 1. **depositCollateral**:
     - User deposits 2 ETH.
     - Protocol stores users collateral deposit
-    - Deposit -> 2 ETH ($4000)
+    - Users_Deposit -> 2 ETH ($4000)
 
 2. **mintDSC**:
-    - User mints 1000 DSC ($1000).
+    - User mints/borrows 1000 DSC ($1000).
     - Protocol checks (HF) of user after minting.
     - If (HF) of user is less than MIN_HF after minting, transaction failed!!!
     - User Debt -> 1000 DSC($1000)
@@ -111,12 +121,15 @@
 3. **redeem collateral**:
     - Protocol ensures that users HF remains stable after redeeming!!!
     - Users redeem 0.5 ETH($1000)
+    - System will check users HF and reverts if its break.
     - Remaining Collateral -> 1.5 ETH($3000)
     - users HF -> $3000/$1000 = 300%
+    - We can consider LIQUIDATION_THRESHOLD here!!!
 
 4. **burnDSC**:
     - Users burns 500DSC ($500)
     - Protocol checks user have enough debt balance to burn DSC
+    - System reverts if HF of user breaks after redeeming.
     - Users debt -> 500DSC ($500) 
     - users HF -> $3000/$500 = 600%
 
@@ -156,3 +169,8 @@
     - Deposit->0.5 ETH($1000)  Debt->800 DSC($800)  
     - Valid collateral -> $1000*0.5 == $500
     - Health factor -> (($500 * 1e10)/$800) == 0.625 * 1e10
+
+
+
+**ChatGPT link**:(IMP.)
+https://chatgpt.com/c/6789544e-f88c-800d-9a31-bc3f063804aa
