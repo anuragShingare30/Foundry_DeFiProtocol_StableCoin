@@ -1,3 +1,7 @@
+### About the project
+
+An DeFi protocol which is a decentralized, over-collateralized stablecoin system that allows users to deposit crypto assets as collateral(ETH/BTC) and mint a decentralized stablecoin (DSC) while ensuring system stability through robust liquidation and health factor mechanisms. The protocol leverages Chainlink price feeds for accurate asset valuation and maintains collateral security by preventing under-collateralization. This approach ensures the stablecoin remains secure, decentralized, and resistant to volatility, making it a reliable component of the DeFi ecosystem.
+
 ### PROJECT ACHIEVEMENTS!!!
 
 1. **Test Coverage**: Unit and fuzz testing achieved Forge coverage of 76.15%, 78.35%, and 60.00%.
